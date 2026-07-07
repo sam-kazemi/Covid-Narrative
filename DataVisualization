@@ -1,0 +1,136 @@
+<html>
+<head>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<style>
+  body { font-family: sans-serif; }
+  .true-line  { fill: none; stroke: steelblue; stroke-width: 2; }
+  .guess-line { fill: none; stroke: crimson; stroke-width: 2; stroke-dasharray: 4 4; }
+  .annotation { font-size: 12px; fill: #333; }
+  button { margin: 4px; }
+</style>
+</head>
+<body>
+<h2 id="title"></h2>
+<div>
+  <button onclick="setScene(1)">1. GDP growth</button>
+  <button onclick="setScene(2)">2. Enrollment</button>
+  <button onclick="setScene(3)">3. You draw it</button>
+  <button id="reveal" onclick="reveal()" style="display:none">Reveal the truth</button>
+</div>
+<svg width="600" height="400"></svg>
+
+<script>
+// ============ PARAMETERS (state variables — cite these in your essay) ============
+var scene = 1;          // which scene is showing
+var drawing = false;    // is the mouse button down in scene 3
+var guesses = {};       // user's drawn prediction: {year: value}
+var revealed = false;   // has the truth been shown in scene 3
+
+// ============ PLACEHOLDER DATA — replace with d3.csv of your WDI export ============
+// shape: [{year, value}]  e.g. enrollment % for South Asia
+var gdpData = d3.range(2000, 2021).map(function(yr){
+  return {year: yr, value: 100 * Math.pow(1.05, yr - 2000)}; });
+var enrollData = d3.range(2000, 2021).map(function(yr){
+  return {year: yr, value: 60 + 1.5*(yr - 2000)}; });
+var drawItData = enrollData;          // scene 3 asks user to guess this
+var drawFromYear = 2008;              // truth shown up to here; user draws the rest
+
+// ============ SHARED SETUP (margin convention — same as your bar chart) ============
+var margin = 50, width = 500, height = 300;
+var svg = d3.select("svg");
+var x = d3.scaleLinear().domain([2000, 2020]).range([0, width]);
+var y = d3.scaleLinear().domain([0, 300]).range([height, 0]);  // reset per scene
+var lineGen = d3.line()
+    .x(function(d){ return x(d.year); })
+    .y(function(d){ return y(d.value); });
+
+// ============ SCENES — one function each; setScene is the only entry point ==========
+function setScene(s) {
+  scene = s;                                  // TRIGGER updates PARAMETER...
+  svg.selectAll("*").remove();                // ...then rebuild display from state
+  d3.select("#reveal").style("display", s === 3 ? "inline" : "none");
+  revealed = false; guesses = {};
+  if (s === 1) scene1();
+  if (s === 2) scene2();
+  if (s === 3) scene3();
+}
+
+function chartGroup() {                        // shared template = visual consistency
+  return svg.append("g")
+      .attr("transform", "translate(" + margin + "," + margin + ")");
+}
+function drawAxes(g) {
+  g.append("g").call(d3.axisLeft(y));
+  g.append("g").attr("transform", "translate(0," + height + ")")
+   .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+}
+function annotate(g, xPos, yPos, text) {       // annotation template: dot + label
+  g.append("circle").attr("cx", xPos).attr("cy", yPos).attr("r", 4).attr("fill", "black");
+  g.append("text").attr("class", "annotation")
+   .attr("x", xPos + 8).attr("y", yPos - 8).text(text);
+}
+
+function scene1() {
+  d3.select("#title").text("Scene 1: GDP grew steadily 2000–2020");
+  y.domain([0, d3.max(gdpData, function(d){ return d.value; })]);
+  var g = chartGroup(); drawAxes(g);
+  g.append("path").datum(gdpData).attr("class", "true-line").attr("d", lineGen);
+  annotate(g, x(2019), y(gdpData[19].value), "Growth accelerated here");
+}
+
+function scene2() {
+  d3.select("#title").text("Scene 2: Did enrollment follow?");
+  y.domain([0, 100]);
+  var g = chartGroup(); drawAxes(g);
+  g.append("path").datum(enrollData).attr("class", "true-line").attr("d", lineGen);
+  annotate(g, x(2010), y(75), "Steady but slower than GDP");
+}
+
+// ============ SCENE 3: you-draw-it ============
+function scene3() {
+  d3.select("#title").text("Scene 3: Draw what happened after " + drawFromYear + ", then reveal");
+  y.domain([0, 100]);
+  var g = chartGroup(); drawAxes(g);
+
+  // truth only up to drawFromYear (martini glass: withhold, then reveal)
+  var known = drawItData.filter(function(d){ return d.year <= drawFromYear; });
+  g.append("path").datum(known).attr("class", "true-line").attr("d", lineGen);
+
+  var guessPath = g.append("path").attr("class", "guess-line");
+
+  // invisible rect to catch mouse events over the whole plot area
+  g.append("rect")
+      .attr("width", width).attr("height", height)
+      .attr("fill", "none").attr("pointer-events", "all")
+      .on("mousedown", function(){ drawing = true; })
+      .on("mouseup",   function(){ drawing = false; })
+      .on("mousemove", function(){
+          if (!drawing || revealed) return;
+          var pos = d3.mouse(this);                       // pixels, plot-space
+          var yr  = Math.round(x.invert(pos[0]));         // pixel -> data
+          var val = y.invert(pos[1]);
+          if (yr <= drawFromYear || yr > 2020) return;    // clamp to drawable zone
+          guesses[yr] = Math.max(0, Math.min(100, val));  // clamp value
+          // redraw guess line from stored data-space guesses
+          var pts = Object.keys(guesses).sort().map(function(k){
+              return {year: +k, value: guesses[k]}; });
+          guessPath.datum(pts).attr("d", lineGen);
+      });
+}
+
+function reveal() {
+  if (scene !== 3 || revealed) return;
+  revealed = true; drawing = false;
+  var g = svg.select("g");
+  var hidden = drawItData.filter(function(d){ return d.year >= drawFromYear; });
+  g.append("path").datum(hidden).attr("class", "true-line")
+      .attr("stroke-dasharray", "1000").attr("stroke-dashoffset", "1000")
+      .attr("d", lineGen)
+    .transition().duration(1500).attr("stroke-dashoffset", 0);  // animated reveal
+  annotate(g, x(2018), y(drawItData[18].value), "The real trend");
+}
+
+setScene(1);   // initial state
+</script>
+</body>
+</html>
