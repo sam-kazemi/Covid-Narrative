@@ -46,6 +46,7 @@
   <button id="prev" onclick="changeScene(-1)">&#8592; Previous</button>
   <button id="next" onclick="changeScene(1)">Next &#8594;</button>
   <span id="progress" style="font-size:13px; color:#888; margin-left:10px;"></span>
+  <button id="reveal" style="display:none" onclick="reveal()">Reveal the real curve</button>
 </div>
 <svg id="chart" width="880" height="440"></svg>
 <p class="affordance">Hover anywhere on the chart to see details for any day.</p>
@@ -59,7 +60,10 @@
    ===================================================================== */
 let sceneIndex = 0;
 let data = [];
-
+let drawing = false;     // is the mouse held down in the draw scene
+let guesses = {};        // user's drawn prediction {timestamp: value}
+let revealed = false;    // has the true curve been revealed
+const DRAW_SCENE_INDEX = 1;   // position of the draw scene in the scenes array
 /* Scene definitions: each scene highlights one date window and carries
    its own title, caption, and annotation text. The chart TEMPLATE is
    identical in every scene (visual consistency); only the highlight
@@ -71,6 +75,12 @@ const scenes = [
     caption: "From January 2020 to March 2023, the US recorded over 100 million confirmed cases \u2014 but they didn't come evenly. Three distinct waves defined the pandemic. Click Next to walk through each one.",
     annTitle: "Peak of the pandemic",
     annLabel: "Each wave was larger than the last."
+  },
+  {
+    type: "draw",
+    start: "2020-01-21", end: "2023-03-23",
+    title: "You lived through this. Can you draw it?",
+    caption: "Before we walk through the waves: draw your best guess of how daily cases rose and fell. Click and drag across the chart, then press Reveal. (Only the first two months are shown to start you off.)"
   },
   {
     start: "2020-03-01", end: "2020-06-15",
@@ -160,6 +170,12 @@ function drawScene() {
   d3.select("#progress").text("Scene " + (sceneIndex + 1) + " of " + scenes.length);
   d3.select("#prev").property("disabled", sceneIndex === 0);
   d3.select("#next").property("disabled", sceneIndex === scenes.length - 1);
+  //reset draw-scene state whenever we land on any scene :)
+  drawing = false; guesses = {}; revealed = false;
+  const isDraw = s.type === "draw";
+  d3.select("#reveal").style("display", isDraw ? "inline-block" : "none");
+  d3.select("#map").style("display", isDraw ? "none" : "block");
+  d3.select("#mapTitle").style("display", isDraw ? "none" : "block");
 
   svg.selectAll("*").remove();
   const g = svg.append("g")
