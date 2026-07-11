@@ -174,8 +174,8 @@ function drawScene() {
       wrap: 220
     },
     x: x(peak.date), y: y(peak.avg),
-    dx: sceneIndex === 2 ? -140 : 60,   // keep the note on-canvas
-    dy: 40
+    dx: x(peak.date) > width / 2 ? -150 : 80,
+    dy: y(peak.avg) < height / 2 ? 60 : -80
   }];
   g.append("g")
     .attr("class", "annotation-group")
