@@ -167,7 +167,9 @@ function drawScene() {
   // highlighted wave for this scene
   const start = parseDate(s.start), end = parseDate(s.end);
   const slice = data.filter(d => d.date >= start && d.date <= end);
-  g.append("path").datum(slice).attr("class", "highlight-line").attr("d", lineGen);
+  g.append("path").datum(slice).attr("class", "highlight-line")
+    .attr("d", lineGen)
+    .attr("opacity", 0).transition().duration(600).attr("opacity", 1);
   g.append("path").datum(slice)
     .attr("fill", "#c0392b").attr("opacity", 0.08)
     .attr("d", areaGen);
