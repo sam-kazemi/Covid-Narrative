@@ -3,7 +3,7 @@
 An interactive slideshow built with D3.js that walks through the three
 major waves of the US COVID-19 pandemic, using the NYT COVID dataset.
 
-**[View the live visualization]([https://yourusername.github.io/your-repo/](https://sam-kazemi.github.io/Covid-Narrative/)**
+**[View the live visualization]([https://yourusername.github.io/your-repo/](https://sam-kazemi.github.io/Covid-Narrative/])**
 
 ![Screenshot of the visualization](screenshot.png)
 
