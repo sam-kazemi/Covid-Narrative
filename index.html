@@ -256,6 +256,55 @@ function drawScene() {
       tooltip.style("display", "none");
     });
 }
+
+function drawDrawScene(g) {
+  // show only the first two months as a starter
+  const starterEnd = parseDate("2020-03-21");
+  const starter = data.filter(d => d.date <= starterEnd);
+  g.append("path").datum(starter).attr("class", "highlight-line").attr("d", lineGen);
+
+  // dashed path that will show the user's guess
+  const guessPath = g.append("path")
+    .attr("fill", "none").attr("stroke", "#2c3e50")
+    .attr("stroke-width", 2).attr("stroke-dasharray", "5 4");
+
+  // capture rect for drawing (replaces the tooltip rect in this scene)
+  g.append("rect")
+    .attr("width", width).attr("height", height)
+    .attr("fill", "none").attr("pointer-events", "all")
+    .style("cursor", "crosshair")
+    .on("mousedown", () => { drawing = true; })
+    .on("mouseup",   () => { drawing = false; })
+    .on("mouseleave",() => { drawing = false; })
+    .on("mousemove", function(event) {
+      if (!drawing || revealed) return;
+      const [mx, my] = d3.pointer(event, this);
+      const date = x.invert(mx);
+      if (date <= starterEnd) return;                    // can't redraw the starter
+      const val = Math.max(0, y.invert(my));
+      // bucket guesses by week so the object stays small and the line smooth
+      const week = d3.timeWeek.floor(date).getTime();
+      guesses[week] = val;
+      const pts = Object.keys(guesses).sort((a,b) => a-b)
+        .map(k => ({ date: new Date(+k), avg: guesses[k] }));
+      guessPath.datum(pts).attr("d", lineGen);
+    });
+}
+
+function reveal() {
+  if (scenes[sceneIndex].type !== "draw" || revealed) return;
+  revealed = true;
+  const g = svg.select("g");
+  const path = g.append("path").datum(data)
+    .attr("class", "highlight-line").attr("d", lineGen);
+  const len = path.node().getTotalLength();
+  path.attr("stroke-dasharray", len).attr("stroke-dashoffset", len)
+    .transition().duration(2500).ease(d3.easeLinear)
+    .attr("stroke-dashoffset", 0);
+  d3.select("#caption").text(
+    "The real curve. Most people underestimate Omicron's January 2022 spike \u2014 " +
+    "it towers over everything that came before. Click Next to walk through each wave.");
+}
 </script>
 </body>
 </html>
