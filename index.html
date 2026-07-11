@@ -66,7 +66,7 @@
 <span style="color:#5b7fa6">&#9632;</span> winter</p>
 <h3 id="mapTitle" style="margin-bottom:4px;"></h3>
 <svg id="map" width="620" height="400"></svg>
-<p class="affordance">Darker states saw more new cases per resident during this wave.</p>
+<p class="affordance" id="mapCaption">Darker states saw more new cases per resident during this wave.</p>
 <p class="affordance">Hover anywhere on the chart to see details for any day.</p>
 <div id="tooltip"></div>
 
@@ -214,7 +214,7 @@ function drawScene() {
   d3.select("#reveal").style("display", isDraw ? "inline-block" : "none");
   d3.select("#map").style("display", isDraw ? "none" : "block");
   d3.select("#mapTitle").style("display", isDraw ? "none" : "block");
-
+  d3.select("#mapCaption").style("display", isDraw ? "none" : "block");
   svg.selectAll("*").remove();
   const g = svg.append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
