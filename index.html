@@ -137,6 +137,7 @@ function drawScene() {
 
   d3.select("#title").html("Three Waves: " + s.title);
   d3.select("#caption").text(s.caption);
+  d3.select("#progress").text("Scene " + (sceneIndex + 1) + " of " + scenes.length);
   d3.select("#prev").property("disabled", sceneIndex === 0);
   d3.select("#next").property("disabled", sceneIndex === scenes.length - 1);
 
