@@ -154,7 +154,9 @@ function drawScene() {
     .attr("transform", `translate(0,${height})`)
     .call(d3.axisBottom(x).ticks(8));
   g.append("g")
-    .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("~s")));
+    .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("~s")).tickSize(-width))
+    .call(g2 => g2.selectAll(".tick line").attr("stroke", "#eee"))
+    .call(g2 => g2.select(".domain").remove());
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2).attr("y", -55)
