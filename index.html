@@ -59,6 +59,11 @@
   <button id="reveal" style="display:none" onclick="reveal()">Reveal the real curve</button>
 </div>
 <svg id="chart" width="880" height="470"></svg>
+<p class="affordance">Background bands mark the seasons:
+<span style="color:#7fbf7f">&#9632;</span> spring
+<span style="color:#e8c547">&#9632;</span> summer
+<span style="color:#d98e4a">&#9632;</span> autumn
+<span style="color:#5b7fa6">&#9632;</span> winter</p>
 <h3 id="mapTitle" style="margin-bottom:4px;"></h3>
 <svg id="map" width="620" height="400"></svg>
 <p class="affordance">Darker states saw more new cases per resident during this wave.</p>
@@ -241,10 +246,10 @@ function drawScene() {
   });
   // ---- season bands + symbols ----
   const seasonDefs = [
-    { name: "spring", startMonth: 2,  color: "#7fbf7f", symbol: "\u{1F338}" }, // Mar 1, 🌸
-    { name: "summer", startMonth: 5,  color: "#e8c547", symbol: "\u{1F349}" }, // Jun 1, 🍉
-    { name: "autumn", startMonth: 8,  color: "#d98e4a", symbol: "\u{1F342}" }, // Sep 1, 🍂
-    { name: "winter", startMonth: 11, color: "#5b7fa6", symbol: "\u{2744}\u{FE0F}" } // Dec 1, ❄️
+    { name: "spring", startMonth: 2,  color: "#7fbf7f" }, // Mar 1
+    { name: "summer", startMonth: 5,  color: "#e8c547" }, // Jun 1, 
+    { name: "autumn", startMonth: 8,  color: "#d98e4a" }, // Sep 1, 
+    { name: "winter", startMonth: 11, color: "#5b7fa6" } // Dec 1, 
   ];
 
   const [dom0, dom1] = x.domain();
