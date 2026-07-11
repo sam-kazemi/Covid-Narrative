@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <title>Three Waves The US COVID-19 Epidemic</title>
+  
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=Source+Sans+3&display=swap" rel="stylesheet">
 <style>
   body { font-family: 'Source Sans 3', sans-serif; max-width: 900px; margin: 20px auto; }
@@ -49,6 +52,9 @@
   <button id="reveal" style="display:none" onclick="reveal()">Reveal the real curve</button>
 </div>
 <svg id="chart" width="880" height="440"></svg>
+<h3 id="mapTitle" style="margin-bottom:4px;"></h3>
+<svg id="map" width="620" height="400"></svg>
+<p class="affordance">Darker states saw more new cases per resident during this wave.</p>
 <p class="affordance">Hover anywhere on the chart to see details for any day.</p>
 <div id="tooltip"></div>
 
@@ -106,7 +112,20 @@ const scenes = [
     annLabel: "The single highest case count of the pandemic."
   }
 ];
-
+/*============= state population====================*/
+const statePop = {"Alabama":5024279,"Alaska":733391,"Arizona":7151502,"Arkansas":3011524,
+"California":39538223,"Colorado":5773714,"Connecticut":3605944,"Delaware":989948,
+"District of Columbia":689545,"Florida":21538187,"Georgia":10711908,"Hawaii":1455271,
+"Idaho":1839106,"Illinois":12812508,"Indiana":6785528,"Iowa":3190369,"Kansas":2937880,
+"Kentucky":4505836,"Louisiana":4657757,"Maine":1362359,"Maryland":6177224,
+"Massachusetts":7029917,"Michigan":10077331,"Minnesota":5706494,"Mississippi":2961279,
+"Missouri":6154913,"Montana":1084225,"Nebraska":1961504,"Nevada":3104614,
+"New Hampshire":1377529,"New Jersey":9288994,"New Mexico":2117522,"New York":20201249,
+"North Carolina":10439388,"North Dakota":779094,"Ohio":11799448,"Oklahoma":3959353,
+"Oregon":4237256,"Pennsylvania":13002700,"Rhode Island":1097379,"South Carolina":5118425,
+"South Dakota":886667,"Tennessee":6910840,"Texas":29145505,"Utah":3271616,
+"Vermont":643077,"Virginia":8631393,"Washington":7705281,"West Virginia":1793716,
+"Wisconsin":5893718,"Wyoming":576851};
 /* ============ shared chart template (margin convention) ============ */
 const margin = {top: 40, right: 30, bottom: 40, left: 70};
 const width  = 880 - margin.left - margin.right;
@@ -131,9 +150,14 @@ const areaGen = d3.area()
 /* ==================== load and process the data ====================
    us.csv columns: date, cases, deaths (cumulative national totals).
    We compute daily new cases, then a trailing 7-day average.        */
-d3.csv("us.csv", d => ({ date: parseDate(d.date), cases: +d.cases }))
-  .then(raw => {
-    raw.sort((a, b) => a.date - b.date);
+Promise.all([
+  d3.csv("us.csv", d => ({ date: parseDate(d.date), cases: +d.cases })),
+  d3.csv("us-states.csv", d => ({ date: parseDate(d.date), state: d.state, cases: +d.cases })),
+  d3.json("states-10m.json")
+]).then(([raw, states, topo]) => {
+  stateData = states;
+  usTopo = topo;
+  raw.sort((a, b) => a.date - b.date);
 
     // daily new cases from cumulative counts
     const daily = raw.map((d, i) => ({
@@ -312,6 +336,57 @@ function reveal() {
   d3.select("#caption").text(
     "The real curve. Most people underestimate Omicron's January 2022 spike \u2014 " +
     "it towers over everything that came before. Click Next to walk through each wave.");
+}
+/*=============for the map===============*/
+/* New cases per 100k residents, per state, within a date window.
+   Cumulative at window end minus cumulative at window start.      */
+function casesByState(start, end) {
+  const result = {};
+  const perState = d3.group(stateData, d => d.state);
+  perState.forEach((rows, state) => {
+    if (!statePop[state]) return;              // skips territories
+    rows.sort((a, b) => a.date - b.date);
+    const before = rows.filter(d => d.date < start);
+    const during = rows.filter(d => d.date <= end);
+    const startCum = before.length ? before[before.length - 1].cases : 0;
+    const endCum   = during.length ? during[during.length - 1].cases : 0;
+    result[state] = (endCum - startCum) / statePop[state] * 100000;
+  });
+  return result;
+}
+
+function drawMap() {
+  const s = scenes[sceneIndex];
+  const values = casesByState(parseDate(s.start), parseDate(s.end));
+
+  d3.select("#mapTitle").text("Where this wave hit: new cases per 100k residents");
+
+  const mapSvg = d3.select("#map");
+  mapSvg.selectAll("*").remove();
+
+  const statesGeo = topojson.feature(usTopo, usTopo.objects.states).features;
+  const projection = d3.geoAlbersUsa().fitSize([620, 400], 
+                      topojson.feature(usTopo, usTopo.objects.states));
+  const path = d3.geoPath(projection);
+
+  const maxVal = d3.max(Object.values(values));
+  const color = d3.scaleSequential(d3.interpolateReds).domain([0, maxVal]);
+
+  mapSvg.selectAll("path")
+    .data(statesGeo)
+    .enter().append("path")
+      .attr("d", path)
+      .attr("fill", d => {
+        const v = values[d.properties.name];
+        return v === undefined ? "#f0f0f0" : color(v);
+      })
+      .attr("stroke", "#fff").attr("stroke-width", 0.5)
+    .append("title")   // native tooltip: state name + value on hover
+      .text(d => {
+        const v = values[d.properties.name];
+        return d.properties.name + (v === undefined ? "" :
+               ": " + fmtNum(Math.round(v)) + " cases per 100k");
+      });
 }
 </script>
 </body>
