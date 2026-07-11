@@ -58,7 +58,7 @@
   <span id="progress" style="font-size:13px; color:#888; margin-left:10px;"></span>
   <button id="reveal" style="display:none" onclick="reveal()">Reveal the real curve</button>
 </div>
-<svg id="chart" width="880" height="440"></svg>
+<svg id="chart" width="880" height="470"></svg>
 <h3 id="mapTitle" style="margin-bottom:4px;"></h3>
 <svg id="map" width="620" height="400"></svg>
 <p class="affordance">Darker states saw more new cases per resident during this wave.</p>
@@ -134,7 +134,7 @@ const statePop = {"Alabama":5024279,"Alaska":733391,"Arizona":7151502,"Arkansas"
 "Vermont":643077,"Virginia":8631393,"Washington":7705281,"West Virginia":1793716,
 "Wisconsin":5893718,"Wyoming":576851};
 /* ============ shared chart template (margin convention) ============ */
-const margin = {top: 40, right: 30, bottom: 40, left: 70};
+const margin = {top: 40, right: 30, bottom: 70, left: 70};
 const width  = 880 - margin.left - margin.right;
 const height = 440 - margin.top  - margin.bottom;
 
@@ -214,10 +214,31 @@ function drawScene() {
   const g = svg.append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // axes (identical every scene = template consistency)
+  // axes (identical in every scene = template consistency as requested :) )
   g.append("g")
     .attr("transform", `translate(0,${height})`)
-    .call(d3.axisBottom(x).ticks(8));
+    .call(d3.axisBottom(x).ticks(d3.timeMonth.every(3))
+      .tickFormat(d3.timeFormat("%b"))
+      .tickSizeOuter(0))
+    .selectAll("text").attr("font-size", "10px");
+  // year bracket wanna make it look fancy 
+  const years = d3.timeYear.range(
+      d3.timeYear.floor(x.domain()[0]), 
+      d3.timeYear.offset(d3.timeYear.floor(x.domain()[1]), 1));
+  const yearTier = g.append("g").attr("transform", `translate(0,${height + 28})`);
+  years.forEach(yr => {
+    const x0 = Math.max(0, x(yr));
+    const x1 = Math.min(width, x(d3.timeYear.offset(yr, 1)));
+    if (x1 - x0 < 30) return;               // skip slivers at the edges
+    yearTier.append("path")                  // the bracket: ⌐...¬ shape
+      .attr("d", `M${x0 + 2},0 v5 H${x1 - 2} v-5`)
+      .attr("fill", "none").attr("stroke", "#999");
+    yearTier.append("text")
+      .attr("x", (x0 + x1) / 2).attr("y", 18)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "12px").attr("font-weight", "600").attr("fill", "#555")
+      .text(yr.getFullYear());
+  });
   g.append("g")
     .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("~s")).tickSize(-width))
     .call(g2 => g2.selectAll(".tick line").attr("stroke", "#eee"))
