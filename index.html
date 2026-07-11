@@ -194,6 +194,7 @@ function drawScene() {
     .attr("x", -height / 2).attr("y", -55)
     .attr("text-anchor", "middle").attr("font-size", "12px")
     .text("New cases per day (7-day average)");
+  if (!isDraw) {
 
   // full timeline in grey (context, same in every scene)
   g.append("path").datum(data).attr("class", "full-line").attr("d", lineGen);
@@ -254,7 +255,11 @@ function drawScene() {
     .on("mouseleave", function() {
       focus.style("display", "none");
       tooltip.style("display", "none");
-    });
+    if (usTopo) drawMap();
+  } else {
+    drawDrawScene(g);
+  }
+}
 }
 
 function drawDrawScene(g) {
