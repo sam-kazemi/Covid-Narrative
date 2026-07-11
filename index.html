@@ -64,6 +64,8 @@ let drawing = false;     // is the mouse held down in the draw scene
 let guesses = {};        // user's drawn prediction {timestamp: value}
 let revealed = false;    // has the true curve been revealed
 const DRAW_SCENE_INDEX = 1;   // position of the draw scene in the scenes array
+let stateData = [];
+let usTopo = null;
 /* Scene definitions: each scene highlights one date window and carries
    its own title, caption, and annotation text. The chart TEMPLATE is
    identical in every scene (visual consistency); only the highlight
