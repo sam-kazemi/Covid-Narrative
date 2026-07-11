@@ -43,7 +43,9 @@
 </svg>
 
   
-<h1 id="title"></h1>
+<h1 style="margin-bottom:2px;">The Three Waves of America's Pandemic</h1>
+<h2 id="title" style="font-family:'Source Serif 4', serif; font-size:19px; color:#555; margin-top:4px;"></h2>
+  
 <p id="caption"></p>
 <div>
   <button id="prev" onclick="changeScene(-1)">&#8592; Previous</button>
@@ -191,7 +193,7 @@ function changeScene(delta) {
 function drawScene() {
   const s = scenes[sceneIndex];
 
-  d3.select("#title").html("Three Waves: " + s.title);
+  d3.select("#title").html(s.title);
   d3.select("#caption").text(s.caption);
   d3.select("#progress").text("Scene " + (sceneIndex + 1) + " of " + scenes.length);
   d3.select("#prev").property("disabled", sceneIndex === 0);
