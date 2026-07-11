@@ -95,7 +95,11 @@ const y = d3.scaleLinear().range([height, 0]);
 const lineGen = d3.line()
   .x(d => x(d.date))
   .y(d => y(d.avg));
-
+  
+const areaGen = d3.area()
+  .x(d => x(d.date))
+  .y0(() => y(0))
+  .y1(d => y(d.avg));
 /* ==================== load and process the data ====================
    us.csv columns: date, cases, deaths (cumulative national totals).
    We compute daily new cases, then a trailing 7-day average.        */
