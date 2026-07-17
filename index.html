@@ -175,7 +175,7 @@ const areaGen = d3.area()
    us.csv columns: date, cases, deaths (cumulative national totals).
    We compute daily new cases, then a trailing 7-day average.        */
 Promise.all([
-  d3.csv("us.csv", d => ({ date: parseDate(d.date), cases: +d.cases })),
+  d3.csv("us.csv", d => ({ date: parseDate(d.date), cases: +d.cases, deaths: +d.deaths })),
   d3.csv("us-states.csv", d => ({ date: parseDate(d.date), state: d.state, cases: +d.cases })),
   d3.json("states-10m.json")
 ]).then(([raw, states, topo]) => {
