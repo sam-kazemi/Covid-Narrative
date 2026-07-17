@@ -231,14 +231,14 @@ function drawScene() {
   const g = svg.append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // axes (identical in every scene = template consistency as requested :) )
+  //Axes (identical in every scene = template consistency as requested :) )
   g.append("g")
     .attr("transform", `translate(0,${height})`)
     .call(d3.axisBottom(x).ticks(d3.timeMonth.every(3))
       .tickFormat(d3.timeFormat("%b"))
       .tickSizeOuter(0))
     .selectAll("text").attr("font-size", "10px");
-  // year bracket wanna make it look fancy 
+  // year bracket wanna make it look fancy :)
   const years = d3.timeYear.range(
       d3.timeYear.floor(x.domain()[0]), 
       d3.timeYear.offset(d3.timeYear.floor(x.domain()[1]), 1));
