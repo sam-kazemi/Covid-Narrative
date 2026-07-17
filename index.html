@@ -313,7 +313,7 @@ function drawScene() {
       title: s.annTitle + ": " + fmtNum(Math.round(peak.avg)) + " cases/day",
       label: s.annLabel+ " Deaths at this point: " +
              fmtNum(Math.round(peak.avgDeaths)) + "/day.",
-      wrap: 220
+      wrap: 240
     },
     x: x(peak.date), y: y(peak.avg),
     dx: x(peak.date) > width / 2 ? -150 : 80,
