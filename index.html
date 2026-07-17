@@ -195,7 +195,8 @@ Promise.all([
     data = daily.map((d, i) => {
       const window = daily.slice(Math.max(0, i - 6), i + 1);
       const avg = d3.mean(window, w => w.newCases);
-      return { date: d.date, cumulative: d.cumulative, newCases: d.newCases, avg: avg };
+      const avgDeaths = d3.mean(window, w => w.newDeaths);
+      return { date: d.date, cumulative: d.cumulative, newCases: d.newCases, avg: avg, avgDeaths: avgDeaths };
     });
 
     x.domain(d3.extent(data, d => d.date));
