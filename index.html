@@ -479,7 +479,7 @@ function drawMap() {
 
   // Voronoi overlay: gives every state (including tiny ones like RI, DE, DC)
   // a hover region sized by proximity to its centroid, not its drawn shape
-  const centroids = statesGeo.map(d => path.centroid(d));
+  const centroids = statesGeo.map(d => projection(d3.geoCentroid(d)));
   const voronoi = d3.Delaunay.from(centroids).voronoi([0, 0, 620, 400]);
   const mapTooltip = d3.select("#tooltip");
 
