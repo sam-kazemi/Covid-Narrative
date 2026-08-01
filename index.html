@@ -293,7 +293,32 @@ function drawScene() {
 
   // full timeline in grey (context, same in every scene)
   g.append("path").datum(data).attr("class", "full-line").attr("d", lineGen);
+    
+  // previous wave's peak, kept as a faint reference so "bigger than last
+  // time" is checkable on screen, not just from memory
+  if (sceneIndex >= 3) {
+    const prevScene = scenes[sceneIndex - 1];
+    const prevStart = parseDate(prevScene.start), prevEnd = parseDate(prevScene.end);
+    const prevSlice = data.filter(d => d.date >= prevStart && d.date <= prevEnd);
+    const prevPeak = prevSlice.reduce((a, b) => (b.avg > a.avg ? b : a), prevSlice[0]);
 
+    g.append("path").datum(prevSlice)
+      .attr("fill", "none").attr("stroke", "#c0392b")
+      .attr("stroke-width", 2).attr("stroke-dasharray", "3 3")
+      .attr("opacity", 0.35).attr("d", lineGen);
+
+    g.append("circle")
+      .attr("cx", x(prevPeak.date)).attr("cy", y(prevPeak.avg))
+      .attr("r", 4).attr("fill", "#c0392b").attr("opacity", 0.35);
+
+    g.append("text")
+      .attr("x", x(prevPeak.date)).attr("y", y(prevPeak.avg) - 10)
+      .attr("text-anchor", "middle").attr("font-size", "11px")
+      .attr("fill", "#c0392b").attr("opacity", 0.6)
+      .text(prevScene.title.split(" (")[0] + ": " + fmtNum(Math.round(prevPeak.avg)) + "/day");
+  }
+
+    
   // highlighted wave for this scene
   const start = parseDate(s.start), end = parseDate(s.end);
   const slice = data.filter(d => d.date >= start && d.date <= end);
