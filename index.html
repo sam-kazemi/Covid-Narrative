@@ -435,14 +435,14 @@ function drawMap() {
   mapSvg.selectAll("*").remove();
 
   const statesGeo = topojson.feature(usTopo, usTopo.objects.states).features;
-  const projection = d3.geoAlbersUsa().fitSize([620, 400], 
+  const projection = d3.geoAlbersUsa().fitSize([620, 400],
                       topojson.feature(usTopo, usTopo.objects.states));
   const path = d3.geoPath(projection);
 
   const maxVal = d3.max(Object.values(values));
   const color = d3.scaleSequential(d3.interpolateReds).domain([0, maxVal]);
 
-  mapSvg.selectAll("path")
+  const statePaths = mapSvg.append("g").selectAll("path")
     .data(statesGeo)
     .enter().append("path")
       .attr("d", path)
@@ -450,12 +450,47 @@ function drawMap() {
         const v = values[d.properties.name];
         return v === undefined ? "#f0f0f0" : color(v);
       })
-      .attr("stroke", "#fff").attr("stroke-width", 0.5)
-    .append("title")   // native tooltip: state name + value on hover
-      .text(d => {
+      .attr("stroke", "#fff").attr("stroke-width", 0.5);
+
+  if (selectedState) {
+    statePaths.filter(d => d.properties.name === selectedState)
+      .attr("stroke", "#2c6fbb").attr("stroke-width", 2);
+  }
+
+  // ---- Voronoi overlay: gives tiny states (RI, DE, DC, CT...) a hover
+  // target sized by proximity to their centroid, not their drawn shape ----
+  const centroids = statesGeo.map(d => path.centroid(d));
+  const voronoi = d3.Delaunay.from(centroids).voronoi([0, 0, 620, 400]);
+  const mapTooltip = d3.select("#tooltip");
+
+  mapSvg.append("g")
+    .selectAll("path")
+    .data(statesGeo)
+    .enter().append("path")
+      .attr("d", (d, i) => voronoi.renderCell(i))
+      .attr("fill", "none")
+      .attr("pointer-events", "all")
+      .style("cursor", "pointer")
+      .on("mousemove", function(event, d) {
         const v = values[d.properties.name];
-        return d.properties.name + (v === undefined ? "" :
-               ": " + fmtNum(Math.round(v)) + " cases per 100k");
+        statePaths.attr("stroke", d2 => d2.properties.name === selectedState ? "#2c6fbb" : "#fff")
+                   .attr("stroke-width", d2 => d2.properties.name === selectedState ? 2 : 0.5);
+        statePaths.filter(p => p.properties.name === d.properties.name)
+          .attr("stroke", "#333").attr("stroke-width", 1.5);
+        mapTooltip.style("display", "block")
+          .style("left", (event.pageX + 14) + "px")
+          .style("top", (event.pageY - 10) + "px")
+          .html("<b>" + d.properties.name + "</b>" +
+                (v === undefined ? "" : "<br>" + fmtNum(Math.round(v)) + " cases per 100k"));
+      })
+      .on("mouseleave", function() {
+        statePaths.attr("stroke", d2 => d2.properties.name === selectedState ? "#2c6fbb" : "#fff")
+                   .attr("stroke-width", d2 => d2.properties.name === selectedState ? 2 : 0.5);
+        mapTooltip.style("display", "none");
+      })
+      .on("click", function(event, d) {
+        selectedState = d.properties.name;
+        drawScene();
       });
 }
 </script>
