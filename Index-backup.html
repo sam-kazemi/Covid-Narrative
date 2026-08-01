@@ -293,7 +293,32 @@ function drawScene() {
 
   // full timeline in grey (context, same in every scene)
   g.append("path").datum(data).attr("class", "full-line").attr("d", lineGen);
+    
+  // previous wave's peak, kept as a faint reference so "bigger than last
+  // time" is checkable on screen, not just from memory
+  if (sceneIndex >= 3) {
+    const prevScene = scenes[sceneIndex - 1];
+    const prevStart = parseDate(prevScene.start), prevEnd = parseDate(prevScene.end);
+    const prevSlice = data.filter(d => d.date >= prevStart && d.date <= prevEnd);
+    const prevPeak = prevSlice.reduce((a, b) => (b.avg > a.avg ? b : a), prevSlice[0]);
 
+    g.append("path").datum(prevSlice)
+      .attr("fill", "none").attr("stroke", "#c0392b")
+      .attr("stroke-width", 2).attr("stroke-dasharray", "3 3")
+      .attr("opacity", 0.35).attr("d", lineGen);
+
+    g.append("circle")
+      .attr("cx", x(prevPeak.date)).attr("cy", y(prevPeak.avg))
+      .attr("r", 4).attr("fill", "#c0392b").attr("opacity", 0.35);
+
+    g.append("text")
+      .attr("x", x(prevPeak.date)).attr("y", y(prevPeak.avg) - 10)
+      .attr("text-anchor", "middle").attr("font-size", "11px")
+      .attr("fill", "#c0392b").attr("opacity", 0.6)
+      .text(prevScene.title.split(" (")[0] + ": " + fmtNum(Math.round(prevPeak.avg)) + "/day");
+  }
+
+    
   // highlighted wave for this scene
   const start = parseDate(s.start), end = parseDate(s.end);
   const slice = data.filter(d => d.date >= start && d.date <= end);
@@ -435,14 +460,14 @@ function drawMap() {
   mapSvg.selectAll("*").remove();
 
   const statesGeo = topojson.feature(usTopo, usTopo.objects.states).features;
-  const projection = d3.geoAlbersUsa().fitSize([620, 400], 
+  const projection = d3.geoAlbersUsa().fitSize([620, 400],
                       topojson.feature(usTopo, usTopo.objects.states));
   const path = d3.geoPath(projection);
 
   const maxVal = d3.max(Object.values(values));
   const color = d3.scaleSequential(d3.interpolateReds).domain([0, maxVal]);
 
-  mapSvg.selectAll("path")
+  const statePaths = mapSvg.append("g").selectAll("path")
     .data(statesGeo)
     .enter().append("path")
       .attr("d", path)
@@ -450,12 +475,44 @@ function drawMap() {
         const v = values[d.properties.name];
         return v === undefined ? "#f0f0f0" : color(v);
       })
-      .attr("stroke", "#fff").attr("stroke-width", 0.5)
-    .append("title")   // native tooltip: state name + value on hover
-      .text(d => {
+      .attr("stroke", "#fff").attr("stroke-width", 0.5);
+
+  // only keep states the projection can actually place (drops null/Infinity bounds)
+  const validGeo = statesGeo.filter(d => {
+    const b = path.bounds(d);
+    return Number.isFinite(b[0][0]) && Number.isFinite(b[0][1]) &&
+           Number.isFinite(b[1][0]) && Number.isFinite(b[1][1]);
+  });
+
+  const centroids = validGeo.map(d => {
+    const [[x0, y0], [x1, y1]] = path.bounds(d);
+    return [(x0 + x1) / 2, (y0 + y1) / 2];
+  });
+  const voronoi = d3.Delaunay.from(centroids).voronoi([0, 0, 620, 400]);
+  const mapTooltip = d3.select("#tooltip");
+
+  mapSvg.append("g")
+    .selectAll("path")
+    .data(validGeo)
+    .enter().append("path")
+      .attr("d", (d, i) => voronoi.renderCell(i))
+      .attr("fill", "none")
+      .attr("pointer-events", "all")
+      .style("cursor", "pointer")
+      .on("mousemove", function(event, d) {
+        statePaths.attr("stroke", "#fff").attr("stroke-width", 0.5);
+        statePaths.filter(p => p.properties.name === d.properties.name)
+          .attr("stroke", "#333").attr("stroke-width", 1.5);
         const v = values[d.properties.name];
-        return d.properties.name + (v === undefined ? "" :
-               ": " + fmtNum(Math.round(v)) + " cases per 100k");
+        mapTooltip.style("display", "block")
+          .style("left", (event.pageX + 14) + "px")
+          .style("top", (event.pageY - 10) + "px")
+          .html("<b>" + d.properties.name + "</b>" +
+                (v === undefined ? "" : "<br>" + fmtNum(Math.round(v)) + " cases per 100k"));
+      })
+      .on("mouseleave", function() {
+        statePaths.attr("stroke", "#fff").attr("stroke-width", 0.5);
+        mapTooltip.style("display", "none");
       });
 }
 </script>
