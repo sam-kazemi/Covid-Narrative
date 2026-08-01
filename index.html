@@ -452,13 +452,8 @@ function drawMap() {
       })
       .attr("stroke", "#fff").attr("stroke-width", 0.5);
 
-  if (selectedState) {
-    statePaths.filter(d => d.properties.name === selectedState)
-      .attr("stroke", "#2c6fbb").attr("stroke-width", 2);
-  }
-
-  // ---- Voronoi overlay: gives tiny states (RI, DE, DC, CT...) a hover
-  // target sized by proximity to their centroid, not their drawn shape ----
+  // Voronoi overlay: gives every state (including tiny ones like RI, DE, DC)
+  // a hover region sized by proximity to its centroid, not its drawn shape
   const centroids = statesGeo.map(d => path.centroid(d));
   const voronoi = d3.Delaunay.from(centroids).voronoi([0, 0, 620, 400]);
   const mapTooltip = d3.select("#tooltip");
@@ -472,11 +467,10 @@ function drawMap() {
       .attr("pointer-events", "all")
       .style("cursor", "pointer")
       .on("mousemove", function(event, d) {
-        const v = values[d.properties.name];
-        statePaths.attr("stroke", d2 => d2.properties.name === selectedState ? "#2c6fbb" : "#fff")
-                   .attr("stroke-width", d2 => d2.properties.name === selectedState ? 2 : 0.5);
+        statePaths.attr("stroke", "#fff").attr("stroke-width", 0.5);
         statePaths.filter(p => p.properties.name === d.properties.name)
           .attr("stroke", "#333").attr("stroke-width", 1.5);
+        const v = values[d.properties.name];
         mapTooltip.style("display", "block")
           .style("left", (event.pageX + 14) + "px")
           .style("top", (event.pageY - 10) + "px")
@@ -484,13 +478,8 @@ function drawMap() {
                 (v === undefined ? "" : "<br>" + fmtNum(Math.round(v)) + " cases per 100k"));
       })
       .on("mouseleave", function() {
-        statePaths.attr("stroke", d2 => d2.properties.name === selectedState ? "#2c6fbb" : "#fff")
-                   .attr("stroke-width", d2 => d2.properties.name === selectedState ? 2 : 0.5);
+        statePaths.attr("stroke", "#fff").attr("stroke-width", 0.5);
         mapTooltip.style("display", "none");
-      })
-      .on("click", function(event, d) {
-        selectedState = d.properties.name;
-        drawScene();
       });
 }
 </script>
